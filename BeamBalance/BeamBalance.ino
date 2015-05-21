@@ -19,10 +19,12 @@ double distanceFromRight=0; //in inches
 double oldRight = 0;
 double oldLeft = 0;
 
-double TOTAL_LENGTH = 12;
+int acceptableError = 10;
+
+double TOTAL_LENGTH = 34;
 
 double currentIntegral = 0;
-double kP = 0.07;
+double kP = 0.2;
 double kI = 0;
 double kD = 0; 
 double target=8;
@@ -46,11 +48,11 @@ void loop() {
   cumError=cumError+error;
   double correction = pid(error, cumError, slope, kP, kI, kD);
   Serial.print("correction: ");
-  Serial.println(correction);
-  Serial.print("pos: ");
+  Serial.print(correction);
+  Serial.print(" pos: ");
   Serial.println(pos);
   pos = getPos(pos, correction);
-  myservo.write(constrain((int)(pos+0.5),73,110));
+  myservo.write(constrain((int)(pos+0.5),73,115));
 }
 
 double getPos(double oldPos, double correction){
@@ -61,19 +63,24 @@ double getPos(double oldPos, double correction){
 double getError(){
   distanceFromRight=getRightDistance();
   distanceFromLeft = getLeftDistance();
-  distanceFromLeft=(distanceFromLeft+(TOTAL_LENGTH-distanceFromRight))/2;
   Serial.print("distanceFromLeft: ");
-  Serial.println(distanceFromLeft);
-  Serial.print("distanceFromRight: ");
+  Serial.print(distanceFromLeft);
+  Serial.print(" distanceFromRight: ");
   Serial.println(distanceFromRight);
-  if(distanceFromLeft > TOTAL_LENGTH) distanceFromLeft=0;
+  if(distanceFromRight > TOTAL_LENGTH){
+    distanceFromLeft = distanceFromLeft;
+  }else if(distanceFromRight != 0) distanceFromLeft=(distanceFromLeft+(TOTAL_LENGTH-distanceFromRight))/2;
+  if(distanceFromLeft == 0) distanceFromLeft = TOTAL_LENGTH - distanceFromRight;
+  if(distanceFromLeft > TOTAL_LENGTH) distanceFromLeft = TOTAL_LENGTH - distanceFromRight;
+  Serial.print(" final dist from left: ");
+  Serial.println(distanceFromLeft);
   return target-distanceFromLeft;
 }
 
 double getLeftDistance(){
   double left_ping_microseconds = ping(left_trigger_pin, left_echo_pin);
   double left_distance = ping_to_cm(left_ping_microseconds);
-  if(abs(oldLeft - left_distance) > 10){
+  if(abs(oldLeft - left_distance) > acceptableError){
    return oldLeft; 
   }
   oldLeft = left_distance;
@@ -87,37 +94,8 @@ double ping_to_cm(int ping_microseconds){
 double getRightDistance(){
   double right_ping_microseconds = ping(right_trigger_pin, right_echo_pin);
   double right_distance = ping_to_cm(right_ping_microseconds);
-  if(abs(oldRight - right_distance) > 10){
+  if(abs(oldRight - right_distance) > acceptableError){
    return oldRight; 
   }
   oldRight = right_distance;
   return right_distance - 11;
-}
-
-double pid(double error, double integral, double derivative, double Kp, double Ki, double Kd) {
-  return (error * Kp + integral * Ki + derivative * Kd);
-}
-
-void on(int pin){
-  digitalWrite(pin, HIGH);}
-
-void off(int pin){
-  digitalWrite(pin, LOW);}
-
-int ping(int trigger, int echo){
-  int ping_time = 0;
-  // turn off trigger
-  off(trigger);
-  delayMicroseconds(2);
-  // turn on the trigger and leave it on long enough for the
-  // sonar sensor to notice
-  on(trigger);
-  delayMicroseconds(10);
-  off(trigger);
-  ping_time = pulseIn(echo, HIGH);
-  if(ping_time <= 0){
-    ping_time = 3000;}
-  // sonar needs some time to recover before pinging again,
-  // so make sure it gets enough sleep right here.  50 milliseconds
-  delay(50);
-  return ping_time;}
