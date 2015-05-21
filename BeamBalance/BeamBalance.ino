@@ -1,7 +1,12 @@
 
+#include <Servo.h> 
+
+#define sensorIR 15
+Servo myservo;  // Creates a servo object
+int pos = 0;    // Variable to store the servos angle 
+volatile float inches;
 //global variables
-int leftServoPin = 1;  //port number for left motor
-int rightServoPin = 2; //port numbersfor right motor
+
 int right_echo_pin = 12;
 int right_trigger_pin = 13;
 
@@ -26,14 +31,18 @@ void setup(){
   pinMode(right_echo_pin, INPUT);
   pinMode(right_trigger_pin, OUTPUT);
   pinMode(left_echo_pin, INPUT);
-  pinMode(left_trigger_pin, OUTPUT);}
+  pinMode(left_trigger_pin, OUTPUT);
+  myservo.attach(3);  // Assigns data pin to your servo object, must be digital port
+
+}
   
 void loop() {
   //Distance will be from left ultrasonic sensor
   double error = getError();
   double slope=error-lasterror;
   cumError=cumError+error;
-  double torq = pid(error, cumError, slope, kP, kI, kD);
+  double correction = pid(error, cumError, slope, kP, kI, kD);
+  myservo.write(pos);
 }
 
 double getError(){
