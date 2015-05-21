@@ -40,7 +40,7 @@ void setup(){
   myservo.attach(3);  // Assigns data pin to your servo object, must be digital port
 
 }
-  
+
 void loop() {
   //Distance will be from left ultrasonic sensor
   double error = getError();
@@ -56,8 +56,13 @@ void loop() {
 }
 
 double getPos(double oldPos, double correction){
- return oldPos + correction;
-  
+  return oldPos + correction;
+
+}
+
+
+double pid(double error, double integral, double derivative, double Kp, double Ki, double Kd) {
+  return (error * Kp + integral * Ki + derivative * Kd);
 }
 
 double getError(){
@@ -69,7 +74,8 @@ double getError(){
   Serial.println(distanceFromRight);
   if(distanceFromRight > TOTAL_LENGTH){
     distanceFromLeft = distanceFromLeft;
-  }else if(distanceFromRight != 0) distanceFromLeft=(distanceFromLeft+(TOTAL_LENGTH-distanceFromRight))/2;
+  }
+  else if(distanceFromRight != 0) distanceFromLeft=(distanceFromLeft+(TOTAL_LENGTH-distanceFromRight))/2;
   if(distanceFromLeft == 0) distanceFromLeft = TOTAL_LENGTH - distanceFromRight;
   if(distanceFromLeft > TOTAL_LENGTH) distanceFromLeft = TOTAL_LENGTH - distanceFromRight;
   Serial.print(" final dist from left: ");
@@ -81,21 +87,55 @@ double getLeftDistance(){
   double left_ping_microseconds = ping(left_trigger_pin, left_echo_pin);
   double left_distance = ping_to_cm(left_ping_microseconds);
   if(abs(oldLeft - left_distance) > acceptableError){
-   return oldLeft; 
+    return oldLeft; 
   }
   oldLeft = left_distance;
   return left_distance;
 }
 
+
 double ping_to_cm(int ping_microseconds){
   double sound_cm_per_microsecond_at_sea_level = 0.034029;
-  return ping_microseconds * sound_cm_per_microsecond_at_sea_level / 2;}
+  return ping_microseconds * sound_cm_per_microsecond_at_sea_level / 2;
+}
 
 double getRightDistance(){
   double right_ping_microseconds = ping(right_trigger_pin, right_echo_pin);
   double right_distance = ping_to_cm(right_ping_microseconds);
   if(abs(oldRight - right_distance) > acceptableError){
-   return oldRight; 
+    return oldRight; 
   }
   oldRight = right_distance;
   return right_distance - 11;
+}
+
+int ping(int trigger, int echo){
+  int ping_time = 0;
+  // turn off trigger
+  off(trigger);
+  delayMicroseconds(2);
+  // turn on the trigger and leave it on long enough for the
+  // sonar sensor to notice
+  on(trigger);
+  delayMicroseconds(10);
+  off(trigger);
+  ping_time = pulseIn(echo, HIGH);
+  if(ping_time <= 0){
+    ping_time = 3000;
+  }
+
+  // sonar needs some time to recover before pinging again,
+  // so make sure it gets enough sleep right here.  50 milliseconds
+  delay(50);
+  return ping_time;
+}
+
+void on(int pin){
+  digitalWrite(pin, HIGH);
+}
+
+void off(int pin){
+  digitalWrite(pin, LOW);
+}
+
+
