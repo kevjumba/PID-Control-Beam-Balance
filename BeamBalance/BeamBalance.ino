@@ -3,9 +3,10 @@
 #define sensorIR 15
 Servo myservo;  // Creates a servo object
 volatile float inches;
-double TOTAL_LENGTH = 34;
+double TOTAL_LENGTH = 36;
+double servoHorizontal = 87;
 //global variables
-
+double pos;
 int right_echo_pin = 12;
 int right_trigger_pin = 13;
 
@@ -24,10 +25,10 @@ double currentAngle;
 
 
 double currentIntegral = 0;
-double kP = 15;
-double kI = 3;
-double kD = 5; 
-double target=17;
+double kP = 40;
+double kI = 10;
+double kD = 30; 
+double target=18;
 double lasterror=0;
 double cumError=0;
 //i2c slave address AD0 pin 9 at b1101000 and b1101001
@@ -43,22 +44,31 @@ void setup(){
 }
 
 void loop() {
+  
   //Distance will be from left ultrasonic sensor
   double error = getError();
-  if(error<0){
-    error*=2;
+  if(isErroneous(error)){
   }
-  double slope=error-lasterror;
-  cumError=cumError+error*0.02;
-  double correction = pid(error, cumError, slope, kP, kI, kD);
-  Serial.print("error: ");
-  Serial.println(error);
-  Serial.print("correction: ");
-  Serial.print(correction);
-  Serial.print("Servo position: ");
-  Serial.println(currentAngle);
-  currentAngle = getPos(currentAngle, correction);
-  myservo.write(constrain((int)(currentAngle),73,130));
+  else{
+    if(error<0){
+      error*=2;
+    }
+    if(error>0){
+      error/=2;
+    }
+    double slope=error-lasterror;
+    cumError=cumError+error*0.02;
+    double correction = pid(error, cumError, slope, kP, kI, kD);
+    Serial.println("error: ");
+    Serial.println(error);
+    Serial.println("correction: ");
+    Serial.print(correction);
+    Serial.println("Servo position: ");
+    Serial.println(currentAngle);
+    pos = getPos(currentAngle, correction);
+    myservo.write(constrain((int)(pos),73,130));
+    currentAngle=myservo.read();
+  }
 }
 
 double getPos(double oldPos, double correction){
@@ -73,6 +83,10 @@ double pid(double error, double integral, double derivative, double Kp, double K
 double getError(){
   distanceFromRight=getRightDistance();
   distanceFromLeft = getLeftDistance();
+  Serial.print("Distance from Left: ");
+  Serial.println(distanceFromLeft);
+  Serial.print("Distance from Right: ");
+  Serial.println(distanceFromRight);
   if(isErroneous(distanceFromRight)&&isErroneous(distanceFromLeft)) {
     return target-(oldLeft+oldRight)/2;
   }
@@ -91,13 +105,11 @@ double getError(){
 }
 
 boolean isErroneous(double number){
-  return (number>TOTAL_LENGTH)||(number<0);
+  return (abs(number)>TOTAL_LENGTH);
 }
 double getLeftDistance(){
   double left_ping_microseconds = ping(left_trigger_pin, left_echo_pin);
   double left_distance = ping_to_cm(left_ping_microseconds);
-  Serial.print("distanceFromLeft: ");
-  Serial.print(distanceFromLeft);
   return left_distance;
 }
 
@@ -110,8 +122,6 @@ double ping_to_cm(int ping_microseconds){
 double getRightDistance(){
   double right_ping_microseconds = ping(right_trigger_pin, right_echo_pin);
   double right_distance = ping_to_cm(right_ping_microseconds);
-  Serial.print(" distanceFromRight: ");
-  Serial.println(right_distance);
   return right_distance;
 }
 
