@@ -32,8 +32,7 @@ void loop()
 {
 
   
-  pos = getLeftDistance();   
-  Serial.println(getLeftDistance());  
+  pos = getLeftDistance();  
 
   output=compute(pos);                                                  //computes Output in range of -80 to 80 degrees                                           // 102 degrees is my horizontal 
   myServo.write(output+87);                                        //Writes value of Output to servo
@@ -49,6 +48,7 @@ double compute(double pos)
    {
       /*Compute all the working error variables*/
           double error = setpoint - pos;
+          Serial.println(error);
            integral+= (Ki * error);
       if(integral > servoMax) integral= servoMax;
       else if(integral < servoMin) integral= servoMin;
