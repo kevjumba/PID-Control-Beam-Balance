@@ -1,10 +1,11 @@
 #include <Servo.h>
 double lastTime=0;
 double SampleTime=100;
-double lastPos = 0;
+double lastPos = 0, lastoutput=0;
 double servoMax=30;
 double servoMin=-20;
-double integral=0;
+double integral=0, derivative=0;
+Servo myServo;
 //pin
 
 const int servoPin = 3;                                               //Servo Pin
@@ -14,40 +15,49 @@ int right_echo_pin = 12;
 int right_trigger_pin = 13;
 
 
-float Kp = 3.5;                                                    //Initial Proportional Gain
-float Ki = 1.0/0.1;                                                      //Initial Integral Gain
-float Kd = 0;                                                    //Intitial Derivative Gain
+float Kp = 2.5;                                                    //Initial Proportional Gain
+float Ki = 0.0*0.1;                                                      //Initial Integral Gain
+float Kd = 1.1/0.1;                                                    //Intitial Derivative Gain
 double setpointRight, setpointLeft, pos, output;
-double TOTAL_LENGTH=60;
-Servo myServo;                                                       //Initialize Servo.
-
-//states
 bool reverse;
-void setup() {
 
-  Serial.begin(9600); 
+double TOTAL_LENGTH=60;
+void setup(){
+  Serial.begin(9600);
+  myServo.attach(servoPin);
+  
+  
+  pinMode(right_echo_pin, INPUT);
+  pinMode(right_trigger_pin, OUTPUT);
   pinMode(left_echo_pin, INPUT);
-  pinMode(left_trigger_pin, OUTPUT);  //Begin Serial 
-  myServo.attach(servoPin);                                          //Attach Servo
-
-  lastPos = getDistance(left_trigger_pin, left_echo_pin);                                          //Calls function readPosition() and sets the balls
-  //  position as the input to the PID algorithm
-  setpointLeft = 25.3;
-  setpointRight=21.1;
+  pinMode(left_trigger_pin, OUTPUT);
+  
+  lastPos = getDistance(left_trigger_pin, left_echo_pin);
   reverse=false;
-                                //Set Output limits to -80 and 80 degrees. 
+  setpointLeft=20.06;
+  setpointRight=25.83;
 }
-
 void loop()
 {
+  double error;
+  Serial.println(reverse);
   pos = getDistance(left_trigger_pin, left_echo_pin);
   getDistance(left_trigger_pin, left_echo_pin);
-  Serial.println(setpoint-pos);
+  if(reverse) {
+    error=(-(setpointRight-pos));
+    Serial.println(error);
+    Serial.println(derivative);}
+  else        {
+    error = setpointLeft-pos;
+   Serial.println(error);
+   Serial.println(derivative);}
   if(abs(pos)>TOTAL_LENGTH){
   }
   else{
-    output=compute(pos);                                                  //computes Output in range of -80 to 80 degrees                                           // 102 degrees is my horizontal 
-    myServo.write(output+87);   
+    output=compute(pos);
+    lastoutput=88+pos;
+    if(abs(error)<3.5&&derivative<0.3) myServo.write(88);    //computes Output in range of -80 to 80 degrees                                           // 102 degrees is my horizontal 
+    else myServo.write(output+88);   
   }
                                        //Writes value of Output to servo
 
@@ -61,12 +71,16 @@ double compute(double pos)
    if(timeChange>=SampleTime)
    {
       /*Compute all the working error variables*/
-          double error = setpoint - pos;
+      double error;
+      if(reverse)
+          error = setpointRight - pos;
+      else
+          error = setpointLeft - pos;
            integral+= (Ki * error);
       if(integral > servoMax) integral= servoMax;
       else if(integral < servoMin) integral= servoMin;
       double dInput = (pos - lastPos);
- 
+      derivative = dInput;
       /*Compute PID Output*/
       double output = Kp * error + integral- Kd * dInput;
       
