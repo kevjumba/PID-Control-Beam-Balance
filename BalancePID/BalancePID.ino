@@ -2,19 +2,27 @@
 double lastTime=0;
 double SampleTime=100;
 double lastPos = 0;
-double servoMax=18;
-double servoMin=-14;
+double servoMax=30;
+double servoMin=-20;
 double integral=0;
+//pin
+
 const int servoPin = 3;                                               //Servo Pin
 int left_echo_pin = 8;
 int left_trigger_pin = 7;
-float Kp = 2.5;                                                    //Initial Proportional Gain
-float Ki = 0*0.1;                                                      //Initial Integral Gain
-float Kd = 1.1/0.1;                                                    //Intitial Derivative Gain
-double setpoint, pos, output;
+int right_echo_pin = 12;
+int right_trigger_pin = 13;
+
+
+float Kp = 3.5;                                                    //Initial Proportional Gain
+float Ki = 1.0/0.1;                                                      //Initial Integral Gain
+float Kd = 0;                                                    //Intitial Derivative Gain
+double setpointRight, setpointLeft, pos, output;
+double TOTAL_LENGTH=60;
 Servo myServo;                                                       //Initialize Servo.
 
-
+//states
+bool reverse;
 void setup() {
 
   Serial.begin(9600); 
@@ -22,20 +30,26 @@ void setup() {
   pinMode(left_trigger_pin, OUTPUT);  //Begin Serial 
   myServo.attach(servoPin);                                          //Attach Servo
 
-  lastPos = getLeftDistance();                                           //Calls function readPosition() and sets the balls
+  lastPos = getDistance(left_trigger_pin, left_echo_pin);                                          //Calls function readPosition() and sets the balls
   //  position as the input to the PID algorithm
-  setpoint = 26;
+  setpointLeft = 25.3;
+  setpointRight=21.1;
+  reverse=false;
                                 //Set Output limits to -80 and 80 degrees. 
 }
 
 void loop()
 {
-
-  
-  pos = getLeftDistance();  
-
-  output=compute(pos);                                                  //computes Output in range of -80 to 80 degrees                                           // 102 degrees is my horizontal 
-  myServo.write(output+87);                                        //Writes value of Output to servo
+  pos = getDistance(left_trigger_pin, left_echo_pin);
+  getDistance(left_trigger_pin, left_echo_pin);
+  Serial.println(setpoint-pos);
+  if(abs(pos)>TOTAL_LENGTH){
+  }
+  else{
+    output=compute(pos);                                                  //computes Output in range of -80 to 80 degrees                                           // 102 degrees is my horizontal 
+    myServo.write(output+87);   
+  }
+                                       //Writes value of Output to servo
 
 
 }
@@ -48,7 +62,6 @@ double compute(double pos)
    {
       /*Compute all the working error variables*/
           double error = setpoint - pos;
-          Serial.println(error);
            integral+= (Ki * error);
       if(integral > servoMax) integral= servoMax;
       else if(integral < servoMin) integral= servoMin;
@@ -63,17 +76,18 @@ double compute(double pos)
       /*Remember some variables for next time*/
       lastPos = pos;
       lastTime = now;
-	  return output;
+      if(reverse) return -output;
+      return output;
    }
    else return 0;
 }
 
 
 
-double getLeftDistance(){
-  double left_ping_microseconds = ping(left_trigger_pin, left_echo_pin);
-  double left_distance = ping_to_cm(left_ping_microseconds);
-  return left_distance;
+double getDistance(int trigger, int echo){
+  double ping_microseconds = ping(trigger, echo);
+  double distance = ping_to_cm(ping_microseconds);
+  return distance;
 }
 
 
@@ -103,13 +117,30 @@ int ping(int trigger, int echo){
   return ping_time;
 }
 
-float readPosition() {                                                    //Don't set too low or echos will run into eachother.      
-  double cm=getLeftDistance();
+double readPosition() {                                                    //Don't set too low or echos will run into eachother.      
+  double leftcm=getDistance(left_trigger_pin, left_echo_pin);
+  double rightcm = getDistance(right_trigger_pin, right_echo_pin);
+  if(isErroneous(rightcm)&&isErroneous(leftcm)) {
+    // Serial.print("Both error flag: ");
+    return TOTAL_LENGTH+1;
+  }
+  else if(isErroneous(rightcm)&&!isErroneous(leftcm)){
+    //Serial.print("Right error flag: ");
+    reverse=false;
+    return leftcm;
+  }
+  else if(!isErroneous(rightcm)&&isErroneous(leftcm)){
+    //Serial.print("Left error flag: ");
+    reverse=true;
+    return rightcm;
+  }
+  reverse=false;
+  return leftcm;
+    //Returns distance value.
+}
 
-
-  Serial.println(cm);
-
-  return cm;                                          //Returns distance value.
+boolean isErroneous(double number){
+  return (abs(number)>TOTAL_LENGTH);
 }
 
 void on(int pin){
