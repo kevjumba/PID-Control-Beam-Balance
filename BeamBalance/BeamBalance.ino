@@ -3,7 +3,7 @@
 #define sensorIR 15
 Servo myservo;  // Creates a servo object
 volatile float inches;
-double TOTAL_LENGTH = 36;
+double TOTAL_LENGTH = 45;
 double servoHorizontal = 87;
 //global variables
 double pos;
@@ -22,13 +22,14 @@ double oldLeft = 0;
 int acceptableError = 10;
 
 double currentAngle;
-
+int servorange = 11; //(max of 14)
+int servomid = 87;
 
 double currentIntegral = 0;
-double kP = 40;
-double kI = 10;
-double kD = 30; 
-double target=18;
+double kP = 20;
+double kI = 0;
+double kD = 0; 
+double target=25;
 double lasterror=0;
 double cumError=0;
 //i2c slave address AD0 pin 9 at b1101000 and b1101001
@@ -47,28 +48,30 @@ void loop() {
   
   //Distance will be from left ultrasonic sensor
   double error = getError();
-  if(isErroneous(error)){
-  }
-  else{
+ //if(isErroneous(error)){
+    //myservo.write(87);
+ //}else{
     if(error<0){
-      error*=2;
+   //   error*=2;
     }
     if(error>0){
-      error/=2;
+    //  error/=2;
     }
     double slope=error-lasterror;
     cumError=cumError+error*0.02;
     double correction = pid(error, cumError, slope, kP, kI, kD);
-    Serial.println("error: ");
-    Serial.println(error);
-    Serial.println("correction: ");
-    Serial.print(correction);
-    Serial.println("Servo position: ");
-    Serial.println(currentAngle);
+   // Serial.println("error: ");
+    //Serial.println(error);
+    //Serial.println("correction: ");
+    //Serial.print(correction);
+    //Serial.println("Servo position: ");
+    //Serial.println(currentAngle);
+    sketchyGraph(error);
     pos = getPos(currentAngle, correction);
-    myservo.write(constrain((int)(pos),73,130));
+    myservo.write(constrain((int)(pos+0.5),servomid-servorange,servomid+servorange));
     currentAngle=myservo.read();
-  }
+  
+
 }
 
 double getPos(double oldPos, double correction){
@@ -81,20 +84,23 @@ double pid(double error, double integral, double derivative, double Kp, double K
 }
 
 double getError(){
-  distanceFromRight=getRightDistance();
+  distanceFromRight= getRightDistance();
   distanceFromLeft = getLeftDistance();
-  Serial.print("Distance from Left: ");
-  Serial.println(distanceFromLeft);
-  Serial.print("Distance from Right: ");
-  Serial.println(distanceFromRight);
+ // Serial.print("Distance from Left: ");
+  //Serial.print(distanceFromLeft);
+  //Serial.print("  Distance from Right: ");
+  //Serial.println(distanceFromRight);
   if(isErroneous(distanceFromRight)&&isErroneous(distanceFromLeft)) {
-    return target-(oldLeft+oldRight)/2;
+ // Serial.print("Both error flag: ");
+    return target -(oldLeft+(TOTAL_LENGTH-oldRight))/2;
   }
-  else if(isErroneous(distanceFromRight)&&isErroneous(distanceFromLeft)){
+  else if(isErroneous(distanceFromRight)&&!isErroneous(distanceFromLeft)){
+  //Serial.print("Right error flag: ");
     oldLeft=distanceFromLeft;
-    return target-distanceFromLeft;
+    return target - distanceFromLeft;
   }
   else if(!isErroneous(distanceFromRight)&&isErroneous(distanceFromLeft)){
+  //Serial.print("Left error flag: ");
     oldRight=distanceFromRight;
     return target-(TOTAL_LENGTH-distanceFromRight);
   }
@@ -102,6 +108,35 @@ double getError(){
   oldRight=distanceFromRight;
   
   return target-(distanceFromLeft+(TOTAL_LENGTH-distanceFromRight))/2;
+}
+
+void sketchyGraph(int val){
+  if(val < 0){
+    val = val* -1;
+   for(int i = 30; i > val; i--){
+     Serial.print(" ");
+   }
+   for(int i = val; i > 0; i--){
+     Serial.print("|");
+   }
+     Serial.print("0");
+   for(int i = 30; i > 0; i--){
+     Serial.print(" ");
+   }
+  }else{
+    
+   for(int i = 30; i > 0; i--){
+     Serial.print(" ");
+   }
+     Serial.print("0");
+ for(int i = 0; i < val; i++){
+  Serial.print("|");
+ } 
+ for(int i = val; i < 30; i++){
+  Serial.print(" ");
+ } 
+  }
+  Serial.println("");
 }
 
 boolean isErroneous(double number){
