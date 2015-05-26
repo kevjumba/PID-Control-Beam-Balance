@@ -48,13 +48,11 @@ void loop()
   getDistance(left_trigger_pin, left_echo_pin); //used to delay loop
   if(reverse) {
     error=(-(setpointRight-pos));
-   // Serial.println(error);
     //Serial.println(derivative);
     //Serial.println("");
    }
   else  {   
     error = setpointLeft-pos;
-    // Serial.println(error);
      //Serial.println(derivative);
      //Serial.println("");
   
@@ -93,6 +91,11 @@ double compute(double pos)
       double dInput = (pos - lastPos);
       derivative = dInput;
       /*Compute PID Output*/
+    Serial.print(Kp * error);
+    Serial.print(",");
+    Serial.print(integral);
+    Serial.print(",");
+    Serial.println(-Kd * dInput);
       double output = Kp * error + integral- Kd * dInput;
       
 	  if(output > servoMax) output = servoMax;
@@ -144,10 +147,7 @@ int ping(int trigger, int echo){
 
 double readPosition() {                                                    //Don't set too low or echos will run into eachother.      
   double leftcm=getDistance(left_trigger_pin, left_echo_pin);
-  Serial.println(leftcm);
   double rightcm = getDistance(right_trigger_pin, right_echo_pin);
-  Serial.println(rightcm);
-  Serial.println("");
   if(isErroneous(rightcm)&&isErroneous(leftcm)) {
     // Serial.print("Both error flag: ");
     return TOTAL_LENGTH+1;
