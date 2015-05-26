@@ -13,13 +13,15 @@ int left_echo_pin = 8;
 int left_trigger_pin = 7;
 int right_echo_pin = 12;
 int right_trigger_pin = 13;
+int horizontal = 88;
 
 
-float Kp = 2.5;                                                    //Initial Proportional Gain
-float Ki = 0.0*0.1;                                                      //Initial Integral Gain
-float Kd = 1.1/0.1;                                                    //Intitial Derivative Gain
+float Kp = 2.0;                                                    //Initial Proportional Gain
+float Ki = 0.2*0.1;                                                      //Initial Integral Gain
+float Kd = 1.5/0.1;                                                    //Intitial Derivative Gain
 double setpointRight, setpointLeft, pos, output;
 bool reverse;
+bool over;
 
 double TOTAL_LENGTH=60;
 void setup(){
@@ -34,30 +36,39 @@ void setup(){
   
   lastPos = getDistance(left_trigger_pin, left_echo_pin);
   reverse=false;
-  setpointLeft=20.06;
-  setpointRight=25.83;
+  over = false;
+  setpointLeft=18;
+  setpointRight=18;
 }
 void loop()
 {
+  //Serial.println(over);
   double error;
-  Serial.println(reverse);
-  pos = getDistance(left_trigger_pin, left_echo_pin);
-  getDistance(left_trigger_pin, left_echo_pin);
+  pos = readPosition();
+  getDistance(left_trigger_pin, left_echo_pin); //used to delay loop
   if(reverse) {
     error=(-(setpointRight-pos));
     Serial.println(error);
-    Serial.println(derivative);}
-  else        {
+   //  Serial.println(derivative);
+   //  Serial.println("");
+   }
+  else       {
+    
     error = setpointLeft-pos;
-   Serial.println(error);
-   Serial.println(derivative);}
-  if(abs(pos)>TOTAL_LENGTH){
-  }
-  else{
+     Serial.println(error);
+    //  Serial.println(derivative);
+    //  Serial.println("");
+   }
+  if(abs(pos)<=TOTAL_LENGTH) {
     output=compute(pos);
-    lastoutput=88+pos;
-    if(abs(error)<3.5&&derivative<0.3) myServo.write(88);    //computes Output in range of -80 to 80 degrees                                           // 102 degrees is my horizontal 
-    else myServo.write(output+88);   
+    lastoutput=horizontal+pos;
+    if(abs(error)< 1.0 && abs(derivative) < 0.1) {
+      over = true;
+    }
+    if(over && abs(error) < 3) {
+      myServo.write(horizontal);
+    }
+    else myServo.write(output+horizontal);  
   }
                                        //Writes value of Output to servo
 
@@ -164,4 +175,3 @@ void on(int pin){
 void off(int pin){
   digitalWrite(pin, LOW);
 }
-
