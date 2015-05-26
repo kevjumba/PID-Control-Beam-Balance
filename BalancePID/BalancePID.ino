@@ -17,7 +17,7 @@ int horizontal = 88;
 
 
 float Kp = 2.0;                                                    //Initial Proportional Gain
-float Ki = 0.2*0.1;                                                      //Initial Integral Gain
+float Ki = 0.1*0.1;                                                      //Initial Integral Gain
 float Kd = 1.5/0.1;                                                    //Intitial Derivative Gain
 double setpointRight, setpointLeft, pos, output;
 bool reverse;
@@ -42,30 +42,30 @@ void setup(){
 }
 void loop()
 {
-  //Serial.println(over);
   double error;
+  pos = getDistance(left_trigger_pin, left_echo_pin);
   pos = readPosition();
   getDistance(left_trigger_pin, left_echo_pin); //used to delay loop
   if(reverse) {
     error=(-(setpointRight-pos));
-    Serial.println(error);
-   //  Serial.println(derivative);
-   //  Serial.println("");
+   // Serial.println(error);
+    //Serial.println(derivative);
+    //Serial.println("");
    }
-  else       {
-    
+  else  {   
     error = setpointLeft-pos;
-     Serial.println(error);
-    //  Serial.println(derivative);
-    //  Serial.println("");
+    // Serial.println(error);
+     //Serial.println(derivative);
+     //Serial.println("");
+  
    }
   if(abs(pos)<=TOTAL_LENGTH) {
     output=compute(pos);
     lastoutput=horizontal+pos;
-    if(abs(error)< 1.0 && abs(derivative) < 0.1) {
+    if(abs(error)< 2.0 && abs(derivative) < 0.2) { //Checks if ball is close to center and moving very slowly
       over = true;
     }
-    if(over && abs(error) < 3) {
+    if(over && abs(error) < 3) { //Checks to see if ball has rolled away from the center
       myServo.write(horizontal);
     }
     else myServo.write(output+horizontal);  
@@ -144,7 +144,10 @@ int ping(int trigger, int echo){
 
 double readPosition() {                                                    //Don't set too low or echos will run into eachother.      
   double leftcm=getDistance(left_trigger_pin, left_echo_pin);
+  Serial.println(leftcm);
   double rightcm = getDistance(right_trigger_pin, right_echo_pin);
+  Serial.println(rightcm);
+  Serial.println("");
   if(isErroneous(rightcm)&&isErroneous(leftcm)) {
     // Serial.print("Both error flag: ");
     return TOTAL_LENGTH+1;
@@ -175,3 +178,4 @@ void on(int pin){
 void off(int pin){
   digitalWrite(pin, LOW);
 }
+
