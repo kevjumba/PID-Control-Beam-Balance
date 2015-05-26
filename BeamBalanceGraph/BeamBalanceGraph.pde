@@ -22,7 +22,8 @@
  import processing.serial.*;
  
  Serial myPort;        // The serial port
- int xPos = 1;         // horizontal position of the graph
+ int xPos = 1;   // horizontal position of the graph
+ int scale = 15;
  void setup () {
  // set the window size:
  size(400, 300);        
@@ -32,7 +33,7 @@
  // I know that the first port in the serial list on my mac
  // is always my  Arduino, so I open Serial.list()[0].
  // Open whatever port is the one you're using.
- myPort = new Serial(this, "/dev/ttyACM1", 9600);
+ myPort = new Serial(this, "/dev/tty.usbmodemfd121", 9600);
  // don't generate a serialEvent() unless you get a newline character:
  myPort.bufferUntil('\n');
  // set inital background:
@@ -53,8 +54,8 @@
      inByte = map(inByte, 0, 1023, 0, height);
      
      // draw the line:
-     stroke(127,34,255);
-     line(xPos, height-50, xPos, height - inByte-50);
+     stroke(255,0,0);
+     line(xPos, height/2, xPos, height/2 - inByte*scale);
      
      // at the edge of the screen, go back to the beginning:
      if (xPos >= width) {
@@ -68,4 +69,3 @@
    }
 
  }
- 
