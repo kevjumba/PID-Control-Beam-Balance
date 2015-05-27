@@ -85,20 +85,19 @@ double compute(double pos)
           error = setpointRight - pos;
       else
           error = setpointLeft - pos;
-           integral+= (Ki * error);
+      integral+= (Ki * error);
       if(integral > servoMax) integral= servoMax;
       else if(integral < servoMin) integral= servoMin;
       double dInput = (pos - lastPos);
       derivative = dInput;
       /*Compute PID Output*/
-    Serial.print(Kp * error);
-    Serial.print(",");
-    Serial.print(integral);
-    Serial.print(",");
-    Serial.println(-Kd * dInput);
+      Serial.print(Kp * error);
+      Serial.print(",");
+      Serial.print(integral);
+      Serial.print(",");
+      Serial.println(-Kd * dInput);
       double output = Kp * error + integral- Kd * dInput;
-      
-	  if(output > servoMax) output = servoMax;
+      if(output > servoMax) output = servoMax;
       else if(output < servoMin) output = servoMin;
 	  
       /*Remember some variables for next time*/
