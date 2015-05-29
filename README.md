@@ -3,6 +3,10 @@ Uses PID Control Theory and the Arduino Uno Microcontroller to position a ball o
 
 Processing is used to connect the Arduino Uno to graph the error. 
 
+The graph code is in BeamBalanceControl and must be run in a processing ide.
+The regular code is in BalancePID which must be run in an Arduino ide.
+The folder labeled BeamBalance is the first iteration of my code that did not work out because of sensor inaccuracies and lack of control.
+
 Here are control vids for the project.
 
 https://www.youtube.com/watch?v=d9CmaeIe4wk&feature=youtu.be
